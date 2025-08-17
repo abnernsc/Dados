@@ -1,6 +1,6 @@
 module.exports = {
   MASTER_EMAIL: process.env.MASTER_EMAIL || 'abner.vnascimento@gmail.com',
-  MASTER_PASSWORD: process.env.MASTER_PASSWORD || '12345678',
+  MASTER_PASSWORD: process.env.MASTER_PASSWORD || 'naumT3interec4',
   JWT_SECRET: process.env.JWT_SECRET || 'chave-jwt-padrao',
   ENCRYPTION_KEY: process.env.ENCRYPTION_KEY || 'chave-criptografia-padrao',
   PORT: process.env.PORT || 3000,
