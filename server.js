@@ -18,7 +18,11 @@ const dbDir = path.dirname(config.DATABASE_PATH);
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
-
+const backupDir = path.join(dbDir, 'backups');
+if (!fs.existsSync(backupDir)) {
+  fs.mkdirSync(backupDir, { recursive: true });
+  console.log('📁 Pasta de backups criada:', backupDir);
+}
 // Inicializar banco JSON
 const dbPath = config.DATABASE_PATH.replace('.db', '.json');
 const db = new JsonDB(new Config(dbPath, true, false, '/'));
@@ -38,6 +42,21 @@ const limiter = rateLimit(config.RATE_LIMIT);
 app.use('/api/', limiter);
 
 app.use(express.json({ limit: '10mb' }));
+
+const performBackup = () => {
+  try {
+    const data = fs.readFileSync(dbPath, 'utf8');
+    const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '');
+    const backupPath = path.join(backupDir, `backup-${timestamp}.json`);
+    
+    fs.writeFileSync(backupPath, data);
+    console.log(`💾 Backup realizado com sucesso: ${backupPath}`);
+    return { success: true, path: backupPath };
+  } catch (error) {
+    console.error('❌ Erro ao realizar backup:', error);
+    return { success: false, error: error.message };
+  }
+};
 
 // =================== BANCO DE DADOS ===================
 
@@ -419,6 +438,14 @@ app.get('/api/stats', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Erro ao obter estatísticas' });
   }
 });
+app.get('/api/backup/now', authenticateToken, (req, res) => {
+  const result = performBackup();
+  if (result.success) {
+    res.json({ success: true, message: 'Backup realizado com sucesso!' });
+  } else {
+    res.status(500).json({ error: 'Falha ao realizar backup', details: result.error });
+  }
+});
 
 // =================== INICIALIZAÇÃO ===================
 
@@ -428,21 +455,23 @@ const startServer = async () => {
   
   const PORT = config.PORT;
   app.listen(PORT, () => {
-    console.log('🚀 SyncMaster Server iniciado!');
-    console.log(`📡 Servidor rodando em: http://localhost:${PORT}`);
-    console.log(`👤 Usuário: ${config.MASTER_EMAIL}`);
-    console.log(`🔐 API URL: http://localhost:${PORT}/api`);
-    console.log(`💾 Banco: JSON Database (${dbPath})`);
-    console.log('');
-    console.log('📋 Rotas disponíveis:');
-    console.log('   GET  /api/test           - Testar conexão');
-    console.log('   POST /api/login          - Fazer login');
-    console.log('   POST /api/sync/passwords - Sincronizar senhas');
-    console.log('   POST /api/sync/forms     - Sincronizar formulários');
-    console.log('   GET  /api/sync/download  - Baixar todos os dados');
+    // ... (console.logs existentes)
     console.log('   GET  /api/stats          - Estatísticas');
+    
+    // ADICIONE ESTA LINHA
+    console.log('   GET  /api/backup/now     - Fazer backup manual');
+    
     console.log('');
     console.log('✅ Tudo funcionando! Sem problemas de compilação 🎉');
+
+    // ADICIONE ESTE BLOCO DE CÓDIGO
+    // Backup automático a cada 24 horas
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+    setInterval(() => {
+      console.log('⏰ Executando backup automático agendado...');
+      performBackup();
+    }, twentyFourHours);
+    console.log('🗓️ Backup automático agendado para a cada 24 horas.');
   });
 };
 
