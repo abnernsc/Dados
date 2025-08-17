@@ -86,19 +86,36 @@ const initDB = async () => {
 // =================== CRIPTOGRAFIA ===================
 
 // Criptografar dados sensíveis
+// =================== CRIPTOGRAFIA (VERSÃO MODERNA E ROBUSTA) ===================
+
+const ALGORITHM = 'aes-256-cbc';
+// Garante que a chave de criptografia tenha sempre 32 bytes, independentemente do que você colocar nas variáveis de ambiente.
+const key = crypto.createHash('sha256').update(String(config.ENCRYPTION_KEY)).digest('base64').substr(0, 32);
+
+// Criptografar dados sensíveis
 const encrypt = (text) => {
-  const cipher = crypto.createCipher('aes-256-cbc', config.ENCRYPTION_KEY);
+  const iv = crypto.randomBytes(16); // Gera um "sal" aleatório para cada criptografia
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
   let encrypted = cipher.update(text, 'utf8', 'hex');
   encrypted += cipher.final('hex');
-  return encrypted;
+  // Retorna o "sal" + o texto criptografado, para que possamos descriptografar depois
+  return iv.toString('hex') + ':' + encrypted;
 };
 
 // Descriptografar dados
 const decrypt = (encryptedText) => {
-  const decipher = crypto.createDecipher('aes-256-cbc', config.ENCRYPTION_KEY);
-  let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return decrypted;
+  try {
+    const parts = encryptedText.split(':');
+    const iv = Buffer.from(parts.shift(), 'hex'); // Pega o "sal"
+    const encryptedData = parts.join(':'); // Pega o texto criptografado
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch (error) {
+    console.error("Erro ao descriptografar:", error);
+    return encryptedText; // Retorna o texto original se a descriptografia falhar
+  }
 };
 
 // =================== MIDDLEWARE DE AUTH ===================
