@@ -1,0 +1,12 @@
+# Arquivos de dependências
+node_modules
+
+# Arquivos de ambiente com senhas
+.env
+
+# Arquivos de log e de sistema
+npm-debug.log
+.DS_Store
+
+# Pasta do banco de dados
+database/
