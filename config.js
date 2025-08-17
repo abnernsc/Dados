@@ -15,6 +15,6 @@ module.exports = {
   CORS_ORIGINS: [
     'chrome-extension://*',
     'moz-extension://*',
-    process.env.FRONTEND_URL || 'bancodados-production.up.railway.app',
+    process.env.FRONTEND_URL || 'dados-production-47f7.up.railway.app',
   ]
 };
